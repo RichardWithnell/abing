@@ -1,0 +1,318 @@
+		     	****************	
+			*     Abing    *
+			****************
+  
+Abing is a tool using the packet pairs dispersion technique to estimate 
+the available Bandwidth/bitrate (unused capacity) for a path in the network. 
+The code is based on the research results described in the paper J.Navratil, 
+R.L. Cottrell "A Practical Approach to Available Bandwidth Estimation" 
+presented in PAM'03 (Passive & Active Measurement Workshop), April 6-8 2003 
+at La Jolla, California and published in Proceedings issued by San Diego 
+Supercomputing Center UCLA San Diego. pp.1-11. 
+The method is based on estimating the cross-traffic (or load using a
+more common terminology) as a basic parameter. The probing packets are sent 
+to the Internet from the abing host with a known separation. We then measure 
+the time between delivery of the adjacent packets in a pair. From this we 
+calculate the utilization of the bottleneck link and other parameters.
+
+The tool was designed to measure available bandwidth in high capacity 
+paths so it can cover all paths with bandwidths between 1-1000 Mbits/s. 
+However, for measurements on high speed links, the appropriate hardware 
+must be used (e.g. a Linux machine with a clock > 1000MHz and a Gbits/s 
+NIC card). The tool is designed to be minimally intrusive and can be run 
+over long durations. It sends only 40 probing packets per measurement. 
+  
+There are 2 programs which are used during each measurement
+experiment:
+	- reflector(server) that is running on remote site (path destination) 
+	- abing (client) which sends probe packet to a reflector, 
+	  receive packets from the reflector and makes the analysis
+
+RUNNING 
+
+1) Start reflector at remote_host
+	
+   abw_rfl &
+
+2) Start abing on your local machine 
+
+   abing -d remote_host
+
+
+In the interactive mode, the results are delivered to the terminal 
+immediately after the bunch of probes (20 packet pairs) has 
+traversed the whole path there and back. 
+
+The abing can be run interactively or with a logging option. 
+If the logging option  is used the results are written 
+into the files in the defined directory. 
+
+You will always get a series of numbers for each direction:
+	- ABw   estimated Available Bandwidth (instant value)
+	- Xtr   estimated cross-traffic (instant value)
+ 	- DBC   Dominated Bottleneck Capacity (instant value)
+	- ABW   Average of Available BandWidth calculated via EWMA
+	- RTT   Round Trip Time (Average Min Max)
+ 	- PPreport The number of send packet pairs (PP) and the number of received valid PPs 
+       
+
+
+The results are presented in the following form:
+timestamp, direction flag, ip-address  and estimated data as shown in 
+following lines: 
+
+>abing -d 132.15.144.226 
+1086913008 T: 132.15.144.226 ABw-Xtr-DBC: 391.1 608.9 1000.0 ABW: 391.1 Mbps RTT: 251.036 250.823 251.571 ms 20 20
+1086913008 F: 132.15.144.226 ABw-Xtr-DBC: 833.7 155.6 989.3 ABW: 833.7 Mbps RTT: 251.036 250.823 251.571 ms 20 20
+
+The meaning of the first two values (ABw-Xtr) is more or less clear. The DBC will be
+explained below. The basic relation between the values is as follows:
+
+	ABw = DBC - Xtr
+
+The DBC - Dynamic bottleneck capacity is the capacity of the
+the segment in the path (link)  that at the measurement moment is 
+causing a bottleneck. Usually the router in this segment is overloaded 
+and generates a burst of output packets that are  tightly 
+packed/closely spaced. So the DBC gives a measure of the capacity 
+of the segment where the cross traffic is highest at the moment of 
+measurement. 
+
+In many cases the DBC is determined by the link with the minimum 
+transmission rate capacity in the path (because in most cases this 
+is the link that cause a traffic congestion). But in the cases 
+of the high performance networks (Abilene, ESNET, CALREN, GEANT, etc.) 
+where there are no evident narrow links, the DBC gives the 
+capacity of the mostly loaded link in the path that dominates 
+in traffic limitation. When the path is not extremely loaded, the DBC 
+will have a value that approaches the full capacity for such hop 
+(e.g. 10, 100, 155, 622 or 1000 Mbits/s). 
+
+We also calculate an average value from all previous values of ABw
+using EWMA (Exponentialy Weight Moving Average) formula: 
+		ABW=(1-alpha)*ABw + aplha * old_ABw
+Default value for factor aplpha is 0.75.
+
+RTT values are in the same structure and order as from the standard ping 
+(Min Average Max). They fully correspond to the standard ping values for
+packet length 1450 bytes.
+ 
+For a better understanding of the relation between measured values, 
+I have included a file with several examples (AB-examples.pdf) describing 
+several typical situations on the paths that we are monitoring regularly. 
+
+Running options for reflectors (abw_rfl)
+----------------------------------------
+There are several options in which reflector can run that give quite high 
+flexibility of using it for different type of users.
+
+The running  options for abw_rfl are following:
+         -c      calibration (initialization)
+         -k      run-keyword
+         -s      0,1..n (server mode: default 0 - running in continues mode)
+         -m      reflector port number (default 8176)
+         -h      Help: produces this output
+
+We discovered that in some cases the reflectors work on very old and slow
+machines. To get basic information about a machine performance, we are running
+an initialization process, that creates a file in the directory
+from which abw_rfl is started. The number in the file shows the minimal
+time dispersion of packets (in usec) which can be recognized by this machine.
+
+The whole initialization procedure requiresi the collaboration iof both 
+programs (abw_rfl and abing running locally on the same machine). 
+You should run following:
+./abw_rfl -c &
+abing -c
+It must be run once (when the reflector is installed). It takes several seconds and
+it creates the .localhostname.cal file (1 line with 1 number) in directory 
+in which you run these commands.  It depends on the local setting which 
+localhostname (if short or long) will be created. (In some special cases 
+you can run abing -d localhost instead of -c option.) The file 
+.localhostname.cal can be copied to any directory from which you want 
+to run abw_rfl. (The abw_rfl require it.)
+
+The keyword option (-k) provides the possibility to restrict monitoring just for
+a selected group of users. The keyword is used for blocking response from
+the reflector. If abw_rfl is running with the keyword option all clients
+(abing users) must use the same keyword when they send the probes.
+ 
+Standard setting uses port 8176. Server (abw_rfl is waiting for probes
+on this port). It is more and more usual that network applications are blocked
+by firewalls.  You must use the ports  that are not blocked and to use -m option.
+If reflector is started with -m option (new port number), the abing must use 
+the same number as t is shown in following example. This rule is also valid 
+for k option.
+ 
+Example:
+        abw_rfl -m 9001 -k freD
+        abing -d 134.79.240.27 -m 9001 -n 5 -k freD
+
+The -s option sets the repetitive mode of reflector.
+Normally, the reflector works in continuous mode and it responds to all abing
+reqeusts comming  from anywhere. If the (-s n) is set, it responds only to n
+requests and after that it exits.
+
+./abw_rfl -m 8999 -s 1
+
+All these options can be found by running abw_rfl or abing with the -h  parameter. 
+
+
+Running options for abing 
+-------------------------
+>abing -h  
+The options are: 
+         -d      destination host
+         -t      repeating period (1,2,.. sec)
+         -n      repeating factor (1,5,100,.. times)
+         -m      server port 
+         -k      run-keyword (K324a,freD,.. )
+         -a      alpha factor in EWMA (default value 0.75)
+         -b      number of PP bunches (default number 20)
+         -c      calibration mode
+         -l      dir (where ABW-node.log and monitoring results will be located)
+         -h      Help: produces this output
+
+Some options (d - destination, k - keyword, m - mirror port, a - alpha) have been 
+explained in previous text.
+Other options are self-explanatory (n - repeating factor or t - period) so we can 
+show just simple example of using: 
+
+	abing -d jiri.jn.edu -t 60 -n 100
+
+This will repeat abing to destination node "jiri.jn.edu" 100 times with period 
+60 seconds between abing probes.
+
+The abing can be run interactively (default mode) or with a logging option.
+If the logging option (-l) is used the results are written into the files in 
+the defined directory. There will be 3 files created for each host:
+A file called "ABW-machine.log" contains all data since monitoring started.
+Files: T-ipaddress.txt and F-ipaddress.txt (The T means "To" and F means "From")
+contain the latest monitoring values. The names are created from the ip 
+addresses of the machine that responds on abing probes.  
+
+Example:
+	abing -d jiri.jn.edu -t 60 -n 100 -l /tmp/MYTEST
+
+ls /tmp/MYTEST 
+ABW-jiri.jn.edu.log    F-144.79.24.40.txt   T-144.79.24.40.txt
+
+Remark: the dir for storing monitoring results "/tmp/MYTEST" must exist before
+abing is started.
+
+For series of measurements (with option -n) you will get always nx2 lines of 
+results and the final summary report:
+
+> abing -d grid2.xyz.edu -m 8999 -n 5
+1075925318 T: 131.15.144.226 ABw-Xtr-DBC: 528.1 272.7 800.7 ABW: 528.1 Mbps RTT: 251.275 250.899 253.385 ms 20 20
+1075925318 F: 131.15.144.226 ABw-Xtr-DBC: 400.5 414.6 815.2 ABW: 400.5 Mbps RTT: 251.275 250.899 253.385 ms 20 20
+1075925319 T: 131.15.144.226 ABw-Xtr-DBC: 525.5 254.1 779.5 ABW: 527.4 Mbps RTT: 251.114 250.888 252.268 ms 20 20
+1075925319 F: 131.15.144.226 ABw-Xtr-DBC: 540.9 155.8 696.7 ABW: 435.6 Mbps RTT: 251.114 250.888 252.268 ms 20 20
+1075925320 T: 131.15.144.226 ABw-Xtr-DBC: 630.5 280.8 911.4 ABW: 553.2 Mbps RTT: 251.118 250.904 251.341 ms 20 20
+1075925320 F: 131.15.144.226 ABw-Xtr-DBC: 462.3 355.2 817.5 ABW: 442.3 Mbps RTT: 251.118 250.904 251.341 ms 20 20
+RTT: 251.127 ms ABW(Avg/Sdev) To: 561.351/48.929 From: 467.911/57.435Mbits/s
+
+The summary report gives an average of RTT time, an Average and the Standard
+deviation of ABw for measurements (from last  n < 100 results).
+
+The b option allows to run more probes in one serie. It can be used in extreme conditions 
+when the path shows heavy packet loss or when we want to get results with higher level 
+of statistics. It is obvious that in such case the intrusiveness grows. 
+
+Error reports:
+--------------
+If the abw_rfl is not running on destination you will get the  message: 
+"Connection refused"
+
+>abing -d rhexenor
+recvfrom() failed: Connection refused
+
+If the host doesn't exist you will get or "unknown host" or "Terminated" 
+message.
+
+>abing -d ja.ty.on
+Destination: ja.ty.on: uknown host
+
+>abing -d 137.32.3.99
+Terminated
+
+If application is blocked by local firewall, you can get many different 
+error reports.  The most typical example of such a situation is the following:
+ 
+>abing -d ato.acr.tech.edu
+100 % UDP packet loss
+1075858381 T:  ABw-Xtr-DBC: nan nan nan ABW: nan Mbps
+1075858381 F:  ABw-Xtr-DBC: nan nan nan ABW: nan Mbps
+RTT:  0.000 ms ABW(Avg/Sdev) To:    nan/nan    From:    nan/nan   Mbits/s
+
+
+RELEASE VERSION
+
+Current version is marked as abing_2.2.0
+You can have binary or source version of this software.
+
+COMPILATION and INSTALL
+
+1/ Download correct version
+2/ gunzip -c abing.tar.gz |tar -xvf 
+You can use pre-compile binaries which are in distribution package in dir: 
+abing/Bin/i686/     for Linux or BSD  
+abing/Bin/sparc     for SUN machines
+If you want to make your own staff go to the directory which you selected 
+for abing and run 
+autoconf
+configure
+make
+
+The running versions will be created in
+Bin/platform/Bin
+(where platform is i686 for linux and BSD and sparc for Solaris machine).
+It doesn't need any special installation procedure. You can move your 
+binary version where you want.
+It should work on most Linux machines, on Solaris and on BSD.
+
+Contact: Jiri Navratil, jiri@slac.stanford.edu
+								*jn*
+------------------------------------------------------------------------------
+FINAL REMARKs
+
+Please send your comments about the performance of this available
+bandwidth estimation tool, and any changes you feel would make the
+tool more convenient or user friendly. We also would appreciate, if 
+you will send us the names of the hosts which are running the reflector. 
+
+
+LICENSE REMARK
+ABw is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+SUPPORT:
+This work was supported by the US DOE in the frame of SciDAC program  
+- Advance Computing 
+The program is results of the  project INCITE (Edge-based Traffic 
+Processing and Service Interface for High-Performance Network).
+INCITE is common project of RICE University, Los Alamos National Labs
+and SLAC - Stanford Linear Accelerator.
+
+#--------------------------------------------------------------*/
+#                      DISCLAIMER NOTICE                       */
+#                                                              */
+# This  document  and/or portions  of  the  material and  data */
+# furnished herewith,  was developed under sponsorship  of the */
+# U.S.  Government.  Neither the  U.S. nor the U.S.D.O.E., nor */
+# the Leland Stanford Junior  University, nor their employees, */
+# nor their  respective contractors, subcontractors,  or their */
+# employees,  makes  any  warranty,  express  or  implied,  or */
+# assumes  any  liability   or  responsibility  for  accuracy, */
+# completeness  or usefulness  of any  information, apparatus, */
+# product  or process  disclosed, or  represents that  its use */
+# will not  infringe privately-owned  rights.  Mention  of any */
+# product, its manufacturer, or suppliers shall not, nor is it */
+# intended to, imply approval, disapproval, or fitness for any */
+# particular use.   The U.S. and  the University at  all times */
+# retain the right to use and disseminate same for any purpose */
+# whatsoever.                                                  */
+#--------------------------------------------------------------*/
+

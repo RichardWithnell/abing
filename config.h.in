@@ -1,0 +1,12 @@
+/* define HAVE_IN_ADDR_T if your system has a typedef for in_addr_t */
+#undef HAVE_IN_ADDR_T
+
+/* define HAVE_TIMESTAMP_IOCTL if your system has an ioctl for getting
+	packet timestamps (Linux) */
+#undef HAVE_TIMESTAMP_IOCTL
+
+/* define on systems with sched.h */
+#undef HAVE_SCHED_H
+
+/* define on systems with sys/mman.h */
+#undef HAVE_SYS_MMAN_H

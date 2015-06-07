@@ -1,0 +1,43 @@
+AC_INIT(Src/abw.h)
+
+AC_PROG_CC
+
+if test "$GCC" = "yes" ; then
+	CFLAGS=`echo "foo$CFLAGS" | sed -e 's/foo//' -e 's/O2/O4/'`
+	CFLAGS="$CFLAGS -Wall"
+fi
+
+dnl AC_PROG_INSTALL
+
+AC_CANONICAL_HOST
+
+AC_CHECK_HEADERS(sched.h sys/mman.h)
+
+dnl AC_CHECK_LIB(m,?) is it  necessary
+AC_CHECK_LIB(m,sqrt)
+AC_CHECK_LIB(nsl,gethostbyname)
+AC_CHECK_LIB(socket,socket)
+AC_CHECK_LIB(xnet,socket)
+AC_CHECK_LIB(posix4,sched_setscheduler)
+
+AC_TRY_COMPILE([#include <netinet/in.h>],[in_addr_t x;],
+			AC_DEFINE(HAVE_IN_ADDR_T))
+AC_TRY_COMPILE([#include <sys/socket.h>],[foo(SIOCGSTAMP);],
+			AC_DEFINE(HAVE_TIMESTAMP_IOCTL))
+
+AC_CONFIG_HEADER(config.h)
+AC_OUTPUT(Makefile)
+
+AC_MSG_CHECKING(cached information)
+hostcheck="$host"
+AC_CACHE_VAL(ac_cv_hostcheck, [ ac_cv_hostcheck="$hostcheck" ])
+if test "$ac_cv_hostcheck" != "$hostcheck"; then
+  AC_MSG_RESULT(changed)
+  AC_MSG_WARN(config.cache exists!)
+  AC_MSG_ERROR(you must make distclean first to compile for 
+  different host)
+     else
+       AC_MSG_RESULT(ok)
+fi
+
+
