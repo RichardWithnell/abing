@@ -23,11 +23,9 @@ bin_arch_dir:
 	@if [ ! -d "$(BIN)" ]; then mkdir -p $(BIN); fi;
 
 $(BIN)abw_rfl: bin_arch_dir $(SRC)abw_rfl.c $(SRC)abw.h
-	echo $(BIN)
 	$(CC) $(CFLAGS) $(SRC)abw_rfl.c -o $(BIN)abw_rfl $(LIBS)
 
 $(BIN)abing: bin_arch_dir $(SRC)abw.c $(SRC)msdelay.c $(SRC)abw.h $(SRC)do_client.c  $(SRC)abw6.c
-	echo $(BIN)
 	$(CC) $(CFLAGS) $(FOBJS) -o $(BIN)abing $(LIBS)
 
 clean:
