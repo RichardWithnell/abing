@@ -88,7 +88,7 @@ int main(int argc, char * argv[])
     int 	totcnt=0;
     int 	seqno1,nwpp,len;
     static 	int incnt, outcnt;
-    int pktsize=1450;
+    int pktsize = 1450;
     double sleeptime;
     float  calfactor;
     unsigned short int rcvport,rrcvport,mirrport;
@@ -242,8 +242,11 @@ int main(int argc, char * argv[])
         ptrec = &arec[lindex];
         ptrec->mirr.tv_sec = htonl (tp->tv_sec);
         ptrec->mirr.tv_usec = htonl (tp->tv_usec);
-        ptrec->rnum = htonl (nrcv);
+        ptrec->rnum = htons (nrcv);
         ptrec->num = abwrec->num;
+
+        //printf("Reflector Received Packet: %d\n", ntohs (abwrec->num));
+
         ptrec->ppseq = abwrec->ppseq;
         ptrec->snd.tv_sec = abwrec->snd.tv_sec;
         ptrec->snd.tv_usec = abwrec->snd.tv_usec;
@@ -253,9 +256,9 @@ int main(int argc, char * argv[])
         strcpy(ptext,version);
         np2=np;
         if(!(lindex)){
-            np2=np;
+            np2 = np;
 
-            if(seqno1==abwrec->ppseq) {
+            if(seqno1 == abwrec->ppseq) {
                 sqfl=1;
             } else {
                 sqfl=0;

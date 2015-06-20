@@ -450,6 +450,7 @@ int DiMatrix(char * dirname, char * localhost, int rpt_cnt)
 	strcpy(dtag,"T");
 
 	if(cafl) {
+		printf("Writing calibration file\n");
 		sprintf(calname,".%s.cal",calhost);
 		ss=dSump(ptdmx,0,3000,nbunches,dtag);
 		ssa=dMeanp(ptdmx,0,3000,nbunches);
@@ -463,7 +464,7 @@ int DiMatrix(char * dirname, char * localhost, int rpt_cnt)
 		}
 		fputs(cabuff,Cfile);
 		fclose (Cfile);
-		return -1;
+		return 0;
 	}
 	Abw6(ptdm,dtag,0,rpt_cnt,rtt);
 	if(!logfl) { printf("%s",linebuff); }

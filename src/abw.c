@@ -122,6 +122,9 @@ int main(int argc, char *argv[])
 	iter_n=1;
 	logfl=0;
 	cafl=0;
+	int bindFlag = 0;
+	memset(bindAddress, 0, MAXNAME);
+
 	strcpy(hostname,"machine.domaine.edu");
 	strcpy(dirname,"/tmp");
 	gethostname(calhost,sizeof(calhost));
@@ -320,7 +323,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'B':
-
+				bindFlag = 1;
 				if (*ptr == 0) {
 					argc--; argv++;
 					if (*argv == 0) {
@@ -359,6 +362,10 @@ int main(int argc, char *argv[])
 	lppb=pktsize*8;
 	resolution= lppb/1000;
 /* Rpt Client processing  */
-	Do_Client_Work(hostname,bindAddress,mirrport,iter_n);
+	if(bindFlag){
+		Do_Client_Work(hostname, bindAddress, mirrport, iter_n);
+	} else {
+		Do_Client_Work(hostname, 0, mirrport, iter_n);
+	}
 }
 /******************************************************************************/
