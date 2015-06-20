@@ -30,13 +30,3 @@ $(BIN)abing: bin_arch_dir $(SRC)abw.c $(SRC)msdelay.c $(SRC)abw.h $(SRC)do_clien
 
 clean:
 	rm -f ${TARGETS}
-	rm -f config.cache config.log config.status
-
-distclean: clean
-	rm -f Makefile configure config.h
-
-configure: configure.in
-	autoconf
-
-Makefile: Makefile.in configure
-	./configure
